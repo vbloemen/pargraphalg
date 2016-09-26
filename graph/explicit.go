@@ -13,6 +13,11 @@ type Explicit struct {
 	To []int
 }
 
+// Constructor for the Explicit type.
+func NewExplicit(from []int, to []int) *Explicit {
+	return &Explicit{From: from, To: to}
+}
+
 // Returns the initial state of the graph, 0.
 func (g Explicit) Init() int {
 	return 0
