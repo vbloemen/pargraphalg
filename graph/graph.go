@@ -3,7 +3,7 @@
 package graph
 
 // Interface object for the graph type.
-type Graph interface{
+type Graph interface {
 	Init() int
 	Successors(state int) []int
 }
