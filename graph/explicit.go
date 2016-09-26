@@ -1,5 +1,9 @@
 package graph
 
+import (
+	"fmt"
+)
+
 // An explicitly given graph implementation, using the CSR style of two arrays
 // for representing the successors.
 type Explicit struct {
@@ -21,4 +25,22 @@ func (g Explicit) Successors(state int) []int {
 // Returns the number of state the graph.
 func (g Explicit) NumStates() int {
 	return len(g.From) - 1
+}
+
+// Prints the graph to standard output.
+func (g Explicit) Print() {
+	for i := 0; i < g.NumStates(); i++ {
+		fmt.Println("Successors", i, ":", g.Successors(i))
+	}
+}
+
+// Prints the graph to standard output in DOT format.
+func (g Explicit) PrintDOT() {
+	fmt.Println("digraph graph {")
+	for i := 0; i < g.NumStates(); i++ {
+		for _, suc := range g.Successors(i) {
+			fmt.Printf("  %d -> %d\n", i, suc)
+		}
+	}
+	fmt.Println("}")
 }
