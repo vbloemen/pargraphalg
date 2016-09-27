@@ -6,4 +6,5 @@ package graph
 type Graph interface {
 	Init() int
 	Successors(state int) []int
+	NumStates() int
 }

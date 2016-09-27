@@ -1,17 +1,20 @@
 package main
 
 import (
+	//"fmt"
+
 	"github.com/vbloemen/pargraphalg/alg"
 	"github.com/vbloemen/pargraphalg/graph"
 )
 
 func main() {
 
-	//	g := graph.TestGraph2()
-	g := graph.NewComplete(5)
-	d := alg.NewDFS()
+	a := graph.NewLine(5)
+	b := graph.NewLine(5)
+	g := graph.NewParallelComp(false, a, b)
 
-	g.Print()
+	//g.PrintDOT()
+	d := alg.NewDFS()
 	d.Run(g, g.Init())
 
 }

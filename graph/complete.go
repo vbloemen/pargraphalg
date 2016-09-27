@@ -21,7 +21,7 @@ func (g Complete) Init() int {
 }
 
 // Returns a slice of the successors for a state. This consists of all other
-// states.
+// states, so excluding the current one.
 func (g Complete) Successors(state int) []int {
 	sucs := make([]int, g.NumStates()-1)
 	for i := 0; i < state; i++ {
