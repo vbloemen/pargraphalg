@@ -13,7 +13,7 @@ type Explicit struct {
 	To []int
 }
 
-// Constructor for the Explicit type.
+// Constructor for the Explicit graph type.
 func NewExplicit(from []int, to []int) *Explicit {
 	return &Explicit{From: from, To: to}
 }

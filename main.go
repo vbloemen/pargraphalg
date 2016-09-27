@@ -7,9 +7,11 @@ import (
 
 func main() {
 
-	g := graph.TestGraph2()
+	//	g := graph.TestGraph2()
+	g := graph.NewComplete(5)
 	d := alg.NewDFS()
 
+	g.Print()
 	d.Run(g, g.Init())
 
 }
