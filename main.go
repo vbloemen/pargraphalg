@@ -11,10 +11,17 @@ import (
 func testSearch(g graph.Graph) {
 
 	pbfs := alg.NewParBFS()
-	fmt.Println("Starting Parallel BFS")
+	fmt.Println("Starting Parallel BFS with Sync")
 	start := time.Now()
-	pbfs.Run(g, g.Init())
+	pbfs.RunWithLock(g, g.Init())
 	elapsed := time.Since(start)
+	fmt.Println("Done in", elapsed)
+
+	pbfs = alg.NewParBFS()
+	fmt.Println("Starting Parallel BFS")
+	start = time.Now()
+	pbfs.Run(g, g.Init())
+	elapsed = time.Since(start)
 	fmt.Println("Done in", elapsed)
 
 	pbfs = alg.NewParBFS()
@@ -43,7 +50,7 @@ func main() {
 
 	a := graph.NewLoop(10)
 	b := graph.NewLine(200)
-	g := graph.NewParallelComp(false, a, b, b)
+	g := graph.NewParallelComp(false, a, a, b, b)
 
 	//g.PrintDOT()
 	testSearch(g)
