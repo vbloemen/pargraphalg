@@ -1,7 +1,7 @@
 package alg
 
 import (
-	"fmt"
+	//"fmt"
 
 	"github.com/vbloemen/pargraphalg/graph"
 )
@@ -17,12 +17,12 @@ func NewDFS() *DFS {
 	return &DFS{visited: make(map[int]bool)}
 }
 
-// Performs a recursive DFS search.
+// Performs a recursive DFS.
 func (d DFS) Run(g graph.Graph, from int) {
 	d.visited[from] = true
 	for _, suc := range g.Successors(from) {
 		if !d.visited[suc] {
-			fmt.Printf("%d -> %d\n", from, suc)
+			//fmt.Printf("%d -> %d\n", from, suc)
 			d.Run(g, suc)
 		}
 	}
