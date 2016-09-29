@@ -85,16 +85,12 @@ func main() {
 	//g.PrintDOT()
 	//testSearch(g)
 
-	pbfs3 := alg.NewParBFS3()
+	pbfs := alg.NewParBFS4()
 	fmt.Println("Starting Parallel BFS3")
 	start := time.Now()
-
 	//StartProfiling()
-
-	pbfs3.Run(g, g.Init())
-
+	pbfs.Run(g, g.Init())
 	//pprof.StopCPUProfile()
-
 	elapsed := time.Since(start)
 	fmt.Println("Done in", elapsed)
 

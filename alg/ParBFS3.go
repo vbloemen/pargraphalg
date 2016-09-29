@@ -7,16 +7,16 @@ import (
 )
 
 var _ = fmt.Printf // For debugging; delete when done.
-const maxVisitHandlers = 100
+//const maxVisitHandlers = 100
 
 // Data type for ParBFS3.
 type ParBFS3 struct {
 	Search        // implementing the Search interface
 	V      []bool // visited set
 	C      []int  // current queue
-	Cn     int  // current queue index
+	Cn     int    // current queue index
 	N      []int  // next queue
-	Nn     int  // next queue index
+	Nn     int    // next queue index
 
 	// all channels
 	VC [maxVisitHandlers]chan int
@@ -104,21 +104,18 @@ func (b *ParBFS3) Run(g graph.Graph, from int) {
 
 		// wait until the VC[] channels are done
 		go func() {
-			for i := 0; i< maxVisitHandlers; i++ {
+			for i := 0; i < maxVisitHandlers; i++ {
 				b.VC[i] <- -1
 			}
 		}()
 		// get notified that the VC channels are done
-		for i := 0; i< maxVisitHandlers; i++ {
-			<-flushChan 
+		for i := 0; i < maxVisitHandlers; i++ {
+			<-flushChan
 		}
-
 
 		// TODO: Keep track of all solutions (probably interesting for a paper)
 		// TODO: Multiple queues for processing?
 		// TODO: Check how LTSmin does it
-
-
 
 		// flush the newStateChan
 		go func() {
@@ -126,7 +123,6 @@ func (b *ParBFS3) Run(g graph.Graph, from int) {
 		}()
 		// and get notified that it is flushed
 		<-flushChan
-
 
 		// swapping queues can be done in parallel, but hopefully we can
 		// just do pointer swapping
