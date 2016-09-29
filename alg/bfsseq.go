@@ -24,6 +24,7 @@ func NewBFSSeq() *BFSSeq {
 func (b *BFSSeq) Run(g graph.Graph, from int) {
 	// init search setup
 	b.C <- from
+	b.V[from] = true
 	stateCount := 0
 
 	// check and update visited states with multiple goroutines
