@@ -78,23 +78,23 @@ func StartProfiling() {
 func main() {
 	flag.Parse()
 
-	a := graph.NewLoop(10)
-	b := graph.NewLine(200)
-	g := graph.NewParallelComp(false, a, a, b, b)
+	//a := graph.NewLoop(10)
+	//b := graph.NewLine(200)
+	//g := graph.NewParallelComp(false, a, a, b, b)
 
 	//g.PrintDOT()
 	//testSearch(g)
 
-	pbfs := alg.NewParBFS4()
-	fmt.Println("Starting Parallel BFS3")
+	g := graph.NewTree(22)
+	fmt.Println("states:", g.NumStates())
+	
+	bfs := alg.NewBFS()
+	fmt.Println("Starting BFS")
 	start := time.Now()
-	//StartProfiling()
-	pbfs.Run(g, g.Init())
-	//pprof.StopCPUProfile()
+	bfs.Run(g, g.Init())
 	elapsed := time.Since(start)
 	fmt.Println("Done in", elapsed)
 
-	_ = b
 	_ = g
 
 	//fmt.Println("Number of states:",g.NumStates())
