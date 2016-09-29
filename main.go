@@ -85,15 +85,26 @@ func main() {
 	//g.PrintDOT()
 	//testSearch(g)
 
-	g := graph.NewTree(22)
+	g := graph.NewTree(24)
 	fmt.Println("states:", g.NumStates())
-	
-	bfs := alg.NewBFS()
+
+	bfs := alg.NewBFSSeq2()
 	fmt.Println("Starting BFS")
 	start := time.Now()
+
+	StartProfiling()
 	bfs.Run(g, g.Init())
+	pprof.StopCPUProfile()
+
 	elapsed := time.Since(start)
 	fmt.Println("Done in", elapsed)
+
+	/*pbfs := alg.NewParBFS5()
+	fmt.Println("Starting parallel BFS")
+	start = time.Now()
+	pbfs.Run(g, g.Init())
+	elapsed = time.Since(start)
+	fmt.Println("Done in", elapsed)*/
 
 	_ = g
 

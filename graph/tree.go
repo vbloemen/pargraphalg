@@ -7,13 +7,12 @@ import (
 // A tree graph of a specified depth
 type Tree struct {
 	Graph     // implementing the Graph interface
-	depth int // the depth of the tree
 	n     int // the number of states in the line
 }
 
 // Constructor for the Tree graph type.
 func NewTree(depth int) *Tree {
-	return &Tree{depth: depth, n: 1<<uint(depth) - 1}
+	return &Tree{n: 1<<uint(depth) - 1}
 }
 
 // Returns the initial state of the graph, 0.
@@ -41,7 +40,6 @@ func (g Tree) Print() {
 		fmt.Println("Successors", i, ":", g.Successors(i))
 	}
 }
-
 
 // Prints the graph to standard output in DOT format.
 func (g Tree) PrintDOT() {

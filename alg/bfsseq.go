@@ -8,19 +8,19 @@ import (
 
 // Data type for BFSSeq.
 type BFSSeq struct {
-	Search  // implementing the Search interface
-	V                 []bool                     // visited set
-	C                 chan int                   // current queue channel
+	Search          // implementing the Search interface
+	V      []bool   // visited set
+	C      chan int // current queue channel
 }
 
 // Constructor for the BFS type.
 func NewBFSSeq() *BFSSeq {
-	C := make(chan int, 1e7)
-	V := make([]bool, 1e7)
+	C := make(chan int, 1e8)
+	V := make([]bool, 1e8)
 	return &BFSSeq{C: C, V: V}
 }
 
-// best sequential version of BFSSeq, 
+// best sequential version of BFSSeq,
 func (b *BFSSeq) Run(g graph.Graph, from int) {
 	// init search setup
 	b.C <- from
@@ -38,9 +38,9 @@ func (b *BFSSeq) Run(g graph.Graph, from int) {
 					b.C <- si // add the state to the queue
 				}
 			}
-			stateCount ++
+			stateCount++
 		default:
-			fmt.Println("State count and actual",stateCount,g.NumStates())
+			fmt.Println("State count and actual", stateCount, g.NumStates())
 			return
 		}
 	}
