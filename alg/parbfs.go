@@ -20,7 +20,7 @@ type ParBFS struct {
 	visited map[int]bool
 	q1      *queue.Queue
 	q2      *queue.Queue
-	mutex  sync.Mutex
+	mutex   sync.Mutex
 }
 
 // Constructor for the BFS type.
@@ -113,7 +113,7 @@ func (b ParBFS) Run(g graph.Graph, from int) {
 			numRoutines++
 			go b.handleState(g, state, sucChan, doneChan)
 		}
-		
+
 		// handle visited and push sequentially, for now
 	Loop:
 		for {
