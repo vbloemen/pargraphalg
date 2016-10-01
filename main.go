@@ -82,9 +82,6 @@ func main() {
 	b := graph.NewLine(200)
 	g := graph.NewParallelComp(false, a, a, b, b)
 
-	//g.PrintDOT()
-	//testSearch(g)
-
 	//g := graph.NewTree(25)
 	fmt.Println("states:", g.NumStates())
 

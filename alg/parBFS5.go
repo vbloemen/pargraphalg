@@ -4,6 +4,7 @@ import (
 	"fmt"
 	//"runtime"
 	"sync"
+	"sync/atomic"
 
 	"github.com/vbloemen/pargraphalg/graph"
 )
@@ -11,7 +12,7 @@ import (
 // Data type for ParBFS5.
 type ParBFS5 struct {
 	Search         // implementing the Search interface
-	V      []bool  // visited set
+	V      []int64  // visited set
 	C      []int64 // current array
 	N      []int64 // next array
 	Ci     int64
@@ -26,7 +27,7 @@ type ParBFS5 struct {
 func NewParBFS5() *ParBFS5 {
 	C := make([]int64, 1e8)
 	N := make([]int64, 1e8)
-	V := make([]bool, 1e8)
+	V := make([]int64, 1e8)
 	return &ParBFS5{C: C, N: N, V: V, Ci: 0, Cn: 0, Ni: 0, Nn: 0, nProcs: 0,
 		mu: &sync.Mutex{}}
 }
@@ -39,13 +40,18 @@ func (b *ParBFS5) proc(g graph.Graph, from int64, to int64, done chan bool) {
 		for _, ssi := range sucs {
 			si = int64(ssi)
 
-			b.mu.Lock()
-			if !b.V[si] {
-				b.V[si] = true
-				b.N[b.Nn] = si // add the state to the queue
-				b.Nn++
+			if atomic.CompareAndSwapInt64(&b.V[si], 0, 1) {
+				newN := atomic.AddInt64(&b.Nn,1)
+				b.N[newN-1] = si // add the state to the queue
 			}
-			b.mu.Unlock()
+
+//			b.mu.Lock()
+//			if b.V[si] == 0 {
+//				b.V[si] = 1
+//				b.N[b.Nn] = si // add the state to the queue
+//				b.Nn++
+//			}
+//			b.mu.Unlock()
 		}
 	}
 	done <- true
@@ -57,13 +63,13 @@ func (b *ParBFS5) proc(g graph.Graph, from int64, to int64, done chan bool) {
 func (b *ParBFS5) Run(g graph.Graph, from int) {
 	// init search setup
 	b.C[0] = int64(from)
-	b.V[from] = true
+	b.V[from] = 1
 	b.Ci = 0 // current queue index
 	b.Cn = 1 // current queue length
 	b.Ni = 0 // next queue index
 	b.Nn = 0 // next queue length
 	var stateCount int64 = 0
-	procs := 1 // somehow this is faster than 8 procs
+	procs := 4 // somehow this is faster than 8 procs
 
 	done := make(chan bool, procs)
 
