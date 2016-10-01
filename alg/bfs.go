@@ -4,36 +4,40 @@ import (
 	//"fmt"
 
 	"github.com/vbloemen/pargraphalg/graph"
-
-	"github.com/karalabe/cookiejar/collections/queue"
 )
 
 // Data type for BFS.
 type BFS struct {
-	Search  // implementing the Search interface
-	visited map[int]bool
-	q       *queue.Queue
+	Search        // implementing the Search interface
+	V      []bool // visited set
+	C      []int  // queue array
 }
 
 // Constructor for the BFS type.
 func NewBFS() *BFS {
-	q := queue.New()
-	return &BFS{visited: make(map[int]bool), q: q}
+	C := make([]int, 1e8)
+	V := make([]bool, 1e8)
+	return &BFS{C: C, V: V}
 }
 
-// Performs a BFS.
-func (b BFS) Run(g graph.Graph, from int) {
-	b.q.Push(from)
-	b.visited[from] = true
+// best sequential version of BFS, using a single queue.
+func (b *BFS) Run(g graph.Graph, from int) {
+	// init search setup
+	b.C[0] = from
+	b.V[from] = true
+	Ci := 0 // queue index
+	Cn := 1 // queue length
 
-	for !b.q.Empty() {
-		state := b.q.Pop().(int)
-		sucs := g.Successors(state)
+	for Ci < Cn {
+		sucs := g.Successors(b.C[Ci])
 		for _, si := range sucs {
-			if !b.visited[si] {
-				b.visited[si] = true
-				b.q.Push(si)
+			if !b.V[si] {
+				b.V[si] = true
+				b.C[Cn] = si // add the state to the queue
+				Cn++
 			}
 		}
+		Ci++
 	}
+	//fmt.Println("State count and actual", Cn, g.NumStates())
 }

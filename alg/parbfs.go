@@ -1,164 +1,105 @@
 package alg
 
 import (
-	"fmt"
+	//"fmt"
 	"sync"
-	//"runtime"
+	"sync/atomic"
 
 	"github.com/vbloemen/pargraphalg/graph"
-
-	"github.com/karalabe/cookiejar/collections/queue"
 )
-
-var _ = fmt.Printf // For debugging; delete when done.
-
-var mu = &sync.Mutex{}
 
 // Data type for ParBFS.
 type ParBFS struct {
-	Search  // implementing the Search interface
-	visited map[int]bool
-	q1      *queue.Queue
-	q2      *queue.Queue
-	mutex   sync.Mutex
+	Search         // implementing the Search interface
+	V      []int64 // visited set
+	C      []int64 // current queue
+	N      []int64 // next queue
+	Ci     int64
+	Cn     int64
+	Ni     int64
+	Nn     int64
+	mu     *sync.Mutex
+	procs  int // number of goroutines to spawn
 }
 
 // Constructor for the BFS type.
-func NewParBFS() *ParBFS {
-	q1 := queue.New()
-	q2 := queue.New()
-	return &ParBFS{visited: make(map[int]bool), q1: q1, q2: q2}
+func NewParBFS(procs int) *ParBFS {
+	C := make([]int64, 1e8)
+	N := make([]int64, 1e8)
+	V := make([]int64, 1e8)
+	return &ParBFS{C: C, N: N, V: V, Ci: 0, Cn: 0, Ni: 0, Nn: 0, procs: procs,
+		mu: &sync.Mutex{}}
 }
 
-func (b ParBFS) handleState(g graph.Graph, state int, sucChan chan int,
-	doneChan chan bool) {
-	sucs := g.Successors(state)
-	for _, si := range sucs {
-		//fmt.Println("found suc", si)
-		sucChan <- si
-	}
-	doneChan <- true
-}
+func (b *ParBFS) proc(g graph.Graph, from int64, to int64, done chan bool) {
 
-func (b ParBFS) handleStateLock(g graph.Graph, state int, doneChan chan bool) {
+	for i := from; i < to; i++ {
+		sucs := g.Successors(int(b.C[i]))
+		var si int64
+		for _, ssi := range sucs {
+			si = int64(ssi)
 
-	sucs := g.Successors(state)
-	for _, si := range sucs {
-		// avoid concurrent read and write
-		mu.Lock()
-
-		if !b.visited[si] {
-			b.visited[si] = true
-			b.q2.Push(si)
-		}
-
-		mu.Unlock()
-		//runtime.Gosched()
-	}
-	doneChan <- true
-}
-
-// Performs a parallel BFS by using two queues and swapping the queues in every
-// iteration. Implemented with a sync WaitGroup
-func (b ParBFS) RunWithLock(g graph.Graph, from int) {
-	// init setup
-	b.q1.Push(from)
-	b.visited[from] = true
-	//var wg sync.WaitGroup
-	doneChan := make(chan bool)
-
-	for !b.q1.Empty() {
-
-		// do the successor call for every state in parallel
-		numRoutines := 0
-		for !b.q1.Empty() {
-			state := b.q1.Pop().(int)
-			numRoutines++
-			go b.handleStateLock(g, state, doneChan)
-		}
-
-		// wait until all processes have finished
-	Loop:
-		for {
-			select {
-			case <-doneChan:
-				numRoutines--
-				if numRoutines == 0 {
-					break Loop
-				}
-
+			if atomic.CompareAndSwapInt64(&b.V[si], 0, 1) {
+				newN := atomic.AddInt64(&b.Nn, 1)
+				b.N[newN-1] = si // add the state to the queue
 			}
+
+			//          // mutex lock approach
+			//			b.mu.Lock()
+			//			if b.V[si] == 0 {
+			//				b.V[si] = 1
+			//				b.N[b.Nn] = si // add the state to the queue
+			//				b.Nn++
+			//			}
+			//			b.mu.Unlock()
 		}
-
-		b.q1, b.q2 = b.q2, b.q1
-
 	}
-
+	done <- true
 }
 
-// Performs a parallel BFS by using two queues and swapping the queues in every
-// iteration.
-func (b ParBFS) Run(g graph.Graph, from int) {
-	b.q1.Push(from)
-	b.visited[from] = true
-	sucChan := make(chan int)
-	doneChan := make(chan bool)
+// Spawn X processes that all process the current layer in parallel, by
+// distributing the work evenly: [0..Cn/X) [Cn/X..2*Cn/X) .. [(X-1)Cn/X..Cn).
+// Once they're done, it reports this on the 'done' channel. The main proc
+// will wait for everything to finish, swap the current and next queues and
+// start again.
+func (b *ParBFS) Run(g graph.Graph, from int) {
+	// init search setup
+	b.C[0] = int64(from)
+	b.V[from] = 1
+	b.Ci = 0 // current queue index
+	b.Cn = 1 // current queue length
+	b.Ni = 0 // next queue index
+	b.Nn = 0 // next queue length
+	var stateCount int64 = 0
 
-	for !b.q1.Empty() {
+	done := make(chan bool, b.procs)
 
-		// do the successor call for every state in parallel
-		numRoutines := 0
-		for !b.q1.Empty() {
-			state := b.q1.Pop().(int)
-			numRoutines++
-			go b.handleState(g, state, sucChan, doneChan)
+	for b.Cn > 0 {
+		step := int(b.Cn) / b.procs
+		for p := 0; p < b.procs-1; p++ {
+			//fmt.Println("Starting",int64(p*step),"to",int64((p+1)*step+1),"max:",b.Cn)
+			go b.proc(g, int64(p*step), int64((p+1)*step), done)
+		}
+		//fmt.Println("Starting",int64((b.procs-1)*step),"to",b.Cn,"max:",b.Cn)
+		go b.proc(g, int64((b.procs-1)*step), b.Cn, done)
+
+		// wait for all b.procs to finish
+		for p := 0; p < b.procs; p++ {
+			<-done
 		}
 
-		// handle visited and push sequentially, for now
-	Loop:
-		for {
-			select {
-			case si := <-sucChan:
-				if !b.visited[si] {
-					b.visited[si] = true
-					b.q2.Push(si)
-				}
-			case <-doneChan:
-				//fmt.Println("done!", msg, numRoutines)
-				numRoutines--
-				if numRoutines == 0 {
-					break Loop
-				}
-
-			}
-		}
-
-		b.q1, b.q2 = b.q2, b.q1
-
+		//fmt.Println("Finished iteration of", b.Cn, "states")
+		stateCount += b.Cn
+		b.C, b.N = b.N, b.C
+		b.Ci = 0
+		b.Ni = 0
+		b.Cn = b.Nn
+		b.Nn = 0
 	}
 
-}
-
-// Performs a parallel BFS in a sequential setting by using two queues and
-// swapping the queues in every iteration.
-func (b ParBFS) RunSeq(g graph.Graph, from int) {
-	b.q1.Push(from)
-	b.visited[from] = true
-
-	for !b.q1.Empty() {
-		for !b.q1.Empty() {
-			state := b.q1.Pop().(int)
-			sucs := g.Successors(state)
-			for _, si := range sucs {
-				if !b.visited[si] {
-					b.visited[si] = true
-					b.q2.Push(si)
-				}
-			}
-		}
-
-		b.q1, b.q2 = b.q2, b.q1
-
+	//fmt.Println("State count and actual", stateCount, g.NumStates(),
+	//	"for", b.procs, "procs")
+	if stateCount != int64(g.NumStates()) {
+		panic("Wrong number of states!")
 	}
-
 }

@@ -8,20 +8,21 @@ import (
 
 // Data type for DFS.
 type DFS struct {
-	Search  // implementing the Search interface
-	visited map[int]bool
+	Search        // implementing the Search interface
+	V      []bool // visited set
 }
 
 // Constructor for the DFS type.
 func NewDFS() *DFS {
-	return &DFS{visited: make(map[int]bool)}
+	V := make([]bool, 1e8)
+	return &DFS{V: V}
 }
 
 // Performs a recursive DFS.
 func (d DFS) Run(g graph.Graph, from int) {
-	d.visited[from] = true
+	d.V[from] = true
 	for _, suc := range g.Successors(from) {
-		if !d.visited[suc] {
+		if !d.V[suc] {
 			//fmt.Printf("%d -> %d\n", from, suc)
 			d.Run(g, suc)
 		}
