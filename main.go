@@ -78,18 +78,19 @@ func StartProfiling() {
 func main() {
 	flag.Parse()
 
-	//a := graph.NewLoop(10)
-	//b := graph.NewLine(200)
-	//g := graph.NewParallelComp(false, a, a, b, b)
+	a := graph.NewLoop(10)
+	b := graph.NewLine(200)
+	g := graph.NewParallelComp(false, a, a, b, b)
 
 	//g.PrintDOT()
 	//testSearch(g)
 
-	g := graph.NewTree(24)
+	//g := graph.NewTree(25)
 	fmt.Println("states:", g.NumStates())
 
-	bfs := alg.NewBFSSeq2()
-	fmt.Println("Starting BFS")
+	bfs := alg.NewParBFS5()
+	//bfs := alg.NewBFSSeq2()
+	fmt.Println("Starting Par BFS")
 	start := time.Now()
 
 	StartProfiling()
