@@ -1,50 +1,51 @@
 package main
 
 import (
-	"testing"
-
 	"github.com/vbloemen/pargraphalg/alg"
 	"github.com/vbloemen/pargraphalg/graph"
+	_ "net/http/pprof"
+	_ "runtime"
+	"testing"
 )
 
 const BENCH_TREE_SIZE = 25
 const PAR_PROCS = 4
 
-func BenchmarkBFSTree(b *testing.B) {
+func TestBFSTree(t *testing.T) {
 	g := graph.NewTree(BENCH_TREE_SIZE)
 	bfs := alg.NewBFS()
 	bfs.Run(g, g.Init())
 }
 
-func BenchmarkDFSTree(b *testing.B) {
+func TestDFSTree(t *testing.T) {
 	g := graph.NewTree(BENCH_TREE_SIZE)
 	dfs := alg.NewDFS()
 	dfs.Run(g, g.Init())
 }
 
-func BenchmarkParBFSTree(b *testing.B) {
+func TestParBFSTree(t *testing.T) {
 	g := graph.NewTree(BENCH_TREE_SIZE)
-	pbfs := alg.NewParBFS(PAR_PROCS)
+	pbfs := alg.NewParBFSOS(PAR_PROCS)
 	pbfs.Run(g, g.Init())
 }
 
-func BenchmarkBFSLi200Lo10(b *testing.B) {
+func TestBFSLi200Lo10(t *testing.T) {
 	g := graph.NewParallelComp(false, graph.NewLoop(10),
 		graph.NewLoop(10), graph.NewLine(200), graph.NewLine(200))
 	bfs := alg.NewBFS()
 	bfs.Run(g, g.Init())
 }
 
-func BenchmarkDFSLi200Lo10(b *testing.B) {
+func TestDFSLi200Lo10(t *testing.T) {
 	g := graph.NewParallelComp(false, graph.NewLoop(10),
 		graph.NewLoop(10), graph.NewLine(200), graph.NewLine(200))
 	dfs := alg.NewDFS()
 	dfs.Run(g, g.Init())
 }
 
-func BenchmarkParBFSLi200Lo10(b *testing.B) {
+func TestParBFSLi200Lo10(t *testing.T) {
 	g := graph.NewParallelComp(false, graph.NewLoop(10),
-		graph.NewLoop(10), graph.NewLine(200), graph.NewLine(200))
-	pbfs := alg.NewParBFS(PAR_PROCS)
+		graph.NewLoop(10), graph.NewLine(200), graph.NewLine(200)) // todo change back
+	pbfs := alg.NewParBFSOS(PAR_PROCS)
 	pbfs.Run(g, g.Init())
 }

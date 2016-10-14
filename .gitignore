@@ -2,3 +2,6 @@
 *.pdf
 *.sh
 *.prof
+*.test
+*.out
+

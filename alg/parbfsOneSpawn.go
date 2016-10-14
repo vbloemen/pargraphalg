@@ -2,15 +2,16 @@ package alg
 
 import (
 	//"fmt"
-	"runtime"
 	"sync"
+	"time"
+	"runtime"
 	"sync/atomic"
 
 	"github.com/vbloemen/pargraphalg/graph"
 )
 
-// Data type for ParBFS.
-type ParBFS struct {
+// Data type for ParBFSOS.
+type ParBFSOS struct {
 	Search         // implementing the Search interface
 	V      []int64 // visited set
 	C      []int64 // current queue
@@ -24,38 +25,44 @@ type ParBFS struct {
 }
 
 // Constructor for the BFS type.
-func NewParBFS(procs int) *ParBFS {
+func NewParBFSOS(procs int) *ParBFSOS {
 	C := make([]int64, 1e8)
 	N := make([]int64, 1e8)
 	V := make([]int64, 1e8)
-	return &ParBFS{C: C, N: N, V: V, Ci: 0, Cn: 0, Ni: 0, Nn: 0, procs: procs,
+	return &ParBFSOS{C: C, N: N, V: V, Ci: 0, Cn: 0, Ni: 0, Nn: 0, procs: procs,
 		mu: &sync.Mutex{}}
 }
 
-func (b *ParBFS) proc(g graph.Graph, from int64, to int64, done chan bool) {
+// rangeC is the input channel
+// doneC is the output channel
+func (b *ParBFSOS) proc(g graph.Graph, doneC chan bool, rangeC chan int64) {
 	runtime.LockOSThread()
-	for i := from; i < to; i++ {
-		sucs := g.Successors(int(b.C[i]))
-		var si int64
-		for _, ssi := range sucs {
-			si = int64(ssi)
+	for {
+		from := <-rangeC
+		to := <-rangeC
+		for i := from; i < to; i++ {
+			sucs := g.Successors(int(b.C[i]))
+			var si int64
+			for _, ssi := range sucs {
+				si = int64(ssi)
 
-			if atomic.CompareAndSwapInt64(&b.V[si], 0, 1) {
-				newN := atomic.AddInt64(&b.Nn, 1)
-				b.N[newN-1] = si // add the state to the queue
+				if atomic.CompareAndSwapInt64(&b.V[si], 0, 1) {
+					newN := atomic.AddInt64(&b.Nn, 1)
+					b.N[newN-1] = si // add the state to the queue
+				}
+
+				//          // mutex lock approach
+				//			b.mu.Lock()
+				//			if b.V[si] == 0 {
+				//				b.V[si] = 1
+				//				b.N[b.Nn] = si // add the state to the queue
+				//				b.Nn++
+				//			}
+				//			b.mu.Unlock()
 			}
-
-			//          // mutex lock approach
-			//			b.mu.Lock()
-			//			if b.V[si] == 0 {
-			//				b.V[si] = 1
-			//				b.N[b.Nn] = si // add the state to the queue
-			//				b.Nn++
-			//			}
-			//			b.mu.Unlock()
 		}
+		doneC <- true
 	}
-	done <- true
 }
 
 // Spawn X processes that all process the current layer in parallel, by
@@ -63,7 +70,7 @@ func (b *ParBFS) proc(g graph.Graph, from int64, to int64, done chan bool) {
 // Once they're done, it reports this on the 'done' channel. The main proc
 // will wait for everything to finish, swap the current and next queues and
 // start again.
-func (b *ParBFS) Run(g graph.Graph, from int) {
+func (b *ParBFSOS) Run(g graph.Graph, from int) {
 	// init search setup
 	b.C[0] = int64(from)
 	b.V[from] = 1
@@ -73,20 +80,29 @@ func (b *ParBFS) Run(g graph.Graph, from int) {
 	b.Nn = 0 // next queue length
 	var stateCount int64 = 0
 
-	done := make(chan bool, b.procs)
+
+	doneC := make(chan bool, b.procs)
+	rangeC := make([]chan int64, b.procs)
+
+	for p := 0; p < b.procs; p++ {
+		rangeC[p] = make(chan int64, 2)
+		go b.proc(g, doneC, rangeC[p])
+	}
 
 	for b.Cn > 0 {
 		step := int(b.Cn) / b.procs
 		for p := 0; p < b.procs-1; p++ {
 			//fmt.Println("Starting",int64(p*step),"to",int64((p+1)*step+1),"max:",b.Cn)
-			go b.proc(g, int64(p*step), int64((p+1)*step), done)
+			rangeC[p] <- int64(p * step)
+			rangeC[p] <- int64((p + 1) * step)
 		}
 		//fmt.Println("Starting",int64((b.procs-1)*step),"to",b.Cn,"max:",b.Cn)
-		go b.proc(g, int64((b.procs-1)*step), b.Cn, done)
+		rangeC[b.procs-1] <- int64((b.procs - 1) * step)
+		rangeC[b.procs-1] <- b.Cn
 
 		// wait for all b.procs to finish
 		for p := 0; p < b.procs; p++ {
-			<-done
+			<-doneC
 		}
 
 		//fmt.Println("Finished iteration of", b.Cn, "states")
@@ -96,6 +112,8 @@ func (b *ParBFS) Run(g graph.Graph, from int) {
 		b.Ni = 0
 		b.Cn = b.Nn
 		b.Nn = 0
+
+		time.Sleep(0 * time.Millisecond)
 	}
 
 	//fmt.Println("State count and actual", stateCount, g.NumStates(),

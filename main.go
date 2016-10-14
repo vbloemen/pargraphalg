@@ -14,7 +14,7 @@ func main() {
 
 	fmt.Println("states:", g.NumStates())
 
-	bfs := alg.NewBFS()
+	/*bfs := alg.NewBFS()
 	fmt.Println("Starting Seq BFS")
 	start := time.Now()
 	bfs.Run(g, g.Init())
@@ -24,11 +24,11 @@ func main() {
 	fmt.Println("Starting Seq DFS")
 	start = time.Now()
 	dfs.Run(g, g.Init())
-	fmt.Println("Done in", time.Since(start))
+	fmt.Println("Done in", time.Since(start))*/
 
-	pbfs := alg.NewParBFS(4)
-	fmt.Println("Starting Par BFS")
-	start = time.Now()
+	pbfs := alg.NewParBFSOS(1)
+	fmt.Println("Starting Par BFSOS")
+	start := time.Now()
 	pbfs.Run(g, g.Init())
 	fmt.Println("Done in", time.Since(start))
 }
