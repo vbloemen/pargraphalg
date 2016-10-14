@@ -1,7 +1,7 @@
 package alg
 
 import (
-	//"fmt"
+	"fmt"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -10,8 +10,8 @@ import (
 	"github.com/vbloemen/pargraphalg/graph"
 )
 
-// Data type for ParBFSOS.
-type ParBFSOS struct {
+// Data type for ParBFSLB.
+type ParBFSLB struct {
 	Search         // implementing the Search interface
 	V      []int64 // visited set
 	C      []int64 // current queue
@@ -25,18 +25,23 @@ type ParBFSOS struct {
 }
 
 // Constructor for the BFS type.
-func NewParBFSOS(procs int) *ParBFSOS {
+func NewParBFSLB(procs int) *ParBFSLB {
 	C := make([]int64, 1e8)
 	N := make([]int64, 1e8)
 	V := make([]int64, 1e8)
-	return &ParBFSOS{C: C, N: N, V: V, Ci: 0, Cn: 0, Ni: 0, Nn: 0, procs: procs,
+	return &ParBFSLB{C: C, N: N, V: V, Ci: 0, Cn: 0, Ni: 0, Nn: 0, procs: procs,
 		mu: &sync.Mutex{}}
 }
 
 // rangeC is the input channel
 // doneC is the output channel
-func (b *ParBFSOS) proc(g graph.Graph, doneC chan bool, rangeC chan int64) {
+func (b *ParBFSLB) proc(g graph.Graph, doneC chan bool, rangeC chan int64) {
 	runtime.LockOSThread()
+	var buffer_size int64 = 10
+	buffer := make([]int64, buffer_size)
+	var bn int64 = 0
+	var bi int64 = 0
+
 	for {
 		from := <-rangeC
 		to := <-rangeC
@@ -46,20 +51,32 @@ func (b *ParBFSOS) proc(g graph.Graph, doneC chan bool, rangeC chan int64) {
 			for _, ssi := range sucs {
 				si = int64(ssi)
 
+				// locally write to buffer, if its full, add to queue
 				if atomic.CompareAndSwapInt64(&b.V[si], 0, 1) {
-					newN := atomic.AddInt64(&b.Nn, 1)
-					b.N[newN-1] = si // add the state to the queue
+					if bn == buffer_size {
+						newN := atomic.AddInt64(&b.Nn, bn) - bn
+						for bi = 0; bi < bn; bi++ {
+							b.N[newN+int64(bi)] = buffer[bi]
+						}
+						bn = 0
+					} 
+					buffer[bn] = si
+					bn++
 				}
 
-				//          // mutex lock approach
-				//			b.mu.Lock()
-				//			if b.V[si] == 0 {
-				//				b.V[si] = 1
-				//				b.N[b.Nn] = si // add the state to the queue
-				//				b.Nn++
-				//			}
-				//			b.mu.Unlock()
+				//if atomic.CompareAndSwapInt64(&b.V[si], 0, 1) {
+				//	newN := atomic.AddInt64(&b.Nn, 1)
+				//	b.N[newN-1] = si // add the state to the queue
+				//}
 			}
+		}
+		// write remaining part of buffer
+		if bn > 0 {
+			newN := atomic.AddInt64(&b.Nn, bn) - bn
+			for bi = 0; bi < bn; bi++ {
+				b.N[newN+int64(bi)] = buffer[bi]
+			}
+			bn = 0
 		}
 		doneC <- true
 	}
@@ -70,7 +87,7 @@ func (b *ParBFSOS) proc(g graph.Graph, doneC chan bool, rangeC chan int64) {
 // Once they're done, it reports this on the 'done' channel. The main proc
 // will wait for everything to finish, swap the current and next queues and
 // start again.
-func (b *ParBFSOS) Run(g graph.Graph, from int) {
+func (b *ParBFSLB) Run(g graph.Graph, from int) {
 	// init search setup
 	b.C[0] = int64(from)
 	b.V[from] = 1
@@ -118,6 +135,7 @@ func (b *ParBFSOS) Run(g graph.Graph, from int) {
 	//fmt.Println("State count and actual", stateCount, g.NumStates(),
 	//	"for", b.procs, "procs")
 	if stateCount != int64(g.NumStates()) {
+		fmt.Println("State count and actual", stateCount, g.NumStates())
 		panic("Wrong number of states!")
 	}
 }
