@@ -2,7 +2,7 @@ package alg
 
 import (
 	//"fmt"
-	"runtime"
+	//"runtime"
 	"sync"
 	"sync/atomic"
 
@@ -33,7 +33,7 @@ func NewParBFS(procs int) *ParBFS {
 }
 
 func (b *ParBFS) proc(g graph.Graph, from int64, to int64, done chan bool) {
-	runtime.LockOSThread()
+	//runtime.LockOSThread()
 	for i := from; i < to; i++ {
 		sucs := g.Successors(int(b.C[i]))
 		var si int64

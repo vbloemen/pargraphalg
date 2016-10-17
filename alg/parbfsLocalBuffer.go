@@ -2,7 +2,7 @@ package alg
 
 import (
 	"fmt"
-	"runtime"
+	//"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -36,7 +36,7 @@ func NewParBFSLB(procs int) *ParBFSLB {
 // rangeC is the input channel
 // doneC is the output channel
 func (b *ParBFSLB) proc(g graph.Graph, doneC chan bool, rangeC chan int64) {
-	runtime.LockOSThread()
+	//runtime.LockOSThread()
 	var buffer_size int64 = 10
 	buffer := make([]int64, buffer_size)
 	var bn int64 = 0
@@ -59,7 +59,7 @@ func (b *ParBFSLB) proc(g graph.Graph, doneC chan bool, rangeC chan int64) {
 							b.N[newN+int64(bi)] = buffer[bi]
 						}
 						bn = 0
-					} 
+					}
 					buffer[bn] = si
 					bn++
 				}
